@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { TextField, Typography, Grid, Button, FormControl, InputLabel, Select, MenuItem } from '@material-ui/core';
-import useStyles from './FromStyle';
+import useStyles from './FormStyles';
 
 const initialState = {
   amount: '',
