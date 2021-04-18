@@ -1,8 +1,9 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { TextField, Typography, Grid, Button, FormControl, InputLabel, Select, MenuItem } from '@material-ui/core';
 import { ExpenseTrackerContext } from '../../../context/context';
 import { v4 as uuidv4 } from 'uuid';
 import { incomeCategories, expenseCategories } from '../../../constants/categories';
+import { useSpeechContext } from '@speechly/react-client';
 import formatDate from '../../../utils/formatDate';
 import useStyles from './FormStyles';
 
@@ -17,23 +18,53 @@ const Form = () => {
   const classes = useStyles();
   const [formData, setFormData] = useState(initialState);
   const { addTransaction } = useContext(ExpenseTrackerContext);
-
+  const { segment } = useSpeechContext();
 
   const createTransaction = () => {
-    const transaction = { ...formData, amount: Number(formData.amount), id: uuidv4() }
-  
+    const transaction = { ...formData, amount: Number(formData.amount), id: uuidv4() };
     addTransaction(transaction);
     setFormData(initialState);
   };
 
-  const selectedCategories = formData.type === "Income" ? incomeCategories : expenseCategories;
+  useEffect(() => {
+    if(segment) {
+      if(segment.intent.intent === 'add_expense' ) {
+        setFormData({ ...formData, type:'Expense' });
+      } else if(segment.intent.intent === 'add_income') {
+          setFormData({ ...formData, type:'Expense' });
+      } else if(segment.isFinal && segment.intent.intent === 'create_transaction') {
+        return createTransaction();
+      }else if(segment.isFinal && segment.intent.intent === 'cancel_transaction') {
+        return setFormData(initialState);
+      }
 
+      segment.entities.forEach((entity) => {
+        const category = `${entity.value.charAt(0)}${entity.value.slice(1).toLowerCase()}`;
+        switch (entity.type) {
+          case 'amount':
+            setFormData({ ...formData, amount: entity.value })
+            break;
+          case 'category':
+            setFormData({ ...formData, category })
+            break;
+          case 'date':
+            setFormData({ ...formData, date: entity.value })
+            break;
+          default:
+            break;
+        }
+      })
+    }
+  }, [segment])
+
+
+  const selectedCategories = formData.type === "Income" ? incomeCategories : expenseCategories;
   return (
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <Typography align="center" variant="subtitle2" gutterBottom>
           {/* Here should contains what we get from Speechly */}
-          ...
+          {segment && segment.words.map((word) => word.value).join(" ")}
         </Typography>
       </Grid>
       <Grid item xs={6}>
