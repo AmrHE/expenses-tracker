@@ -21,6 +21,7 @@ const Form = () => {
   const { segment } = useSpeechContext();
 
   const createTransaction = () => {
+    if(Number.isNaN(Number(formData.amount)) || !formData.date.includes('-')) return;
     const transaction = { ...formData, amount: Number(formData.amount), id: uuidv4() };
     addTransaction(transaction);
     setFormData(initialState);
@@ -31,7 +32,7 @@ const Form = () => {
       if(segment.intent.intent === 'add_expense' ) {
         setFormData({ ...formData, type:'Expense' });
       } else if(segment.intent.intent === 'add_income') {
-          setFormData({ ...formData, type:'Expense' });
+          setFormData({ ...formData, type:'Income' });
       } else if(segment.isFinal && segment.intent.intent === 'create_transaction') {
         return createTransaction();
       }else if(segment.isFinal && segment.intent.intent === 'cancel_transaction') {
@@ -39,13 +40,19 @@ const Form = () => {
       }
 
       segment.entities.forEach((entity) => {
+        //reformating the category upperCases and lowerCases
         const category = `${entity.value.charAt(0)}${entity.value.slice(1).toLowerCase()}`;
+
         switch (entity.type) {
           case 'amount':
             setFormData({ ...formData, amount: entity.value })
             break;
           case 'category':
-            setFormData({ ...formData, category })
+            if(incomeCategories.map((IC) => IC.type).includes(category)){
+              setFormData({ ...formData, type: 'Income', category })
+            } else if(expenseCategories.map((EC) => EC.type).includes(category)) {
+              setFormData({ ...formData, type: 'Expense', category })
+            }
             break;
           case 'date':
             setFormData({ ...formData, date: entity.value })
@@ -53,7 +60,10 @@ const Form = () => {
           default:
             break;
         }
-      })
+      });
+      if(segment.isFinal && formData.type && formData.date && formData.category && formData.amount) {
+        createTransaction();
+      }
     }
   }, [segment])
 
