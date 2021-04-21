@@ -22,11 +22,11 @@ function App() {
         <Grid item xs={12} sm={3}>
           <Details title="Expense" />
         </Grid>
-      </Grid>
       <PushToTalkButtonContainer>
         <PushToTalkButton />
         <ErrorPanel />
       </PushToTalkButtonContainer>
+      </Grid>
     </div>
   );
 }
